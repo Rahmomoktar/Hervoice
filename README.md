@@ -1,4 +1,4 @@
-# HER VOICE â€” updated educational prototype
+# HER VOICE 
 
 React + Vite frontend, Express + MongoDB backend. Includes reporter registration and login, private profile codes, reporter-owned reports, reviewer claim/verification flow, private report-based messaging, consultant assignment and internal notes, admin staff creation, and an **offline predefined-response assistant** (not a real AI integration).
 
