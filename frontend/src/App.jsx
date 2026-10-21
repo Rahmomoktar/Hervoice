@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 import { call } from './lib/api.js';
 import {useNavigation} from './lib/navigation.js';
+import {useAutoRefresh} from './lib/useAutoRefresh.js';
 import Navbar from './components/Navbar.jsx';
 import ConfirmLogout from './components/ConfirmLogout.jsx';
 import AuthForm from './components/AuthForm.jsx';
@@ -16,6 +17,7 @@ import ReviewerDashboard from './pages/ReviewerDashboard.jsx';
 import ConsultantDashboard from './pages/ConsultantDashboard.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import AIConsultant from './pages/AIConsultant.jsx';
+import Community from './pages/Community.jsx';
 import { ShieldCheck, MessageCircle, ClipboardCheck, Bot, Users, LogOut, PlusCircle, HeartHandshake } from 'lucide-react';
 export default function App() {
   const {
@@ -28,11 +30,13 @@ export default function App() {
   const [staffInvitation, setStaffInvitation] = useState(null);
   const [logoutPending,setLogoutPending]=useState(false);
   const {location,route,go}=useNavigation();
+  const communityRequested=useRef(route.view==='community');
   const view=route.protected&&!user?'login':route.view;
   useEffect(()=>{if(invitation)go('invite',{replace:true});},[invitation]);
-  useEffect(()=>{if(route.protected&&!user)go('login',{replace:true});},[location.pathname,user?.id]);
+  useEffect(()=>{if(route.protected&&!user){if(route.view==='community')communityRequested.current=true;go('login',{replace:true});}},[location.pathname,user?.id]);
   useEffect(()=>{requestAnimationFrame(()=>{if(location.hash){document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView({behavior:'smooth',block:'start'});}else window.scrollTo(0,0)});},[location.pathname,location.hash]);
   const [error, E] = useState(''),
+    [syncError,setSyncError]=useState(''),
     [notice, N] = useState(''),
     [busy, B] = useState(false);
   const [credentials, C] = useState({
@@ -61,14 +65,18 @@ export default function App() {
     [chat, A] = useState([]),
     [prompt, P] = useState('');
   function navigate(next,options) {
+    setSyncError('');
+    if(next==='home')communityRequested.current=false;
     E('');
     N('');
     go(next,options);
   }
   const running = useRef(false);
+  const operationVersion=useRef(0);
   async function run(fn, {clear=true} = {}) {
     if (running.current) return;
     running.current = true;
+    operationVersion.current++;
     if(clear){E('');N('');}
     B(true);
     try {
@@ -81,6 +89,7 @@ export default function App() {
     }
   }
   async function refresh(u = user, t = token) {
+    operationVersion.current++;
     if (u.role === 'reporter') {
       R((await call('/reports/mine', 'GET', null, t)).reports);
     } else if (u.role === 'admin') {
@@ -103,6 +112,29 @@ export default function App() {
       });
     }else if(['dashboard','reports'].includes(route.view))run(()=>refresh(),{clear:false});
   },[location.pathname,user?.id,token]);
+  useAutoRefresh(async isCurrent=>{
+    if(running.current)return;
+    const version=operationVersion.current;
+    const updates={};
+    if(route.view==='detail'){
+      const detail=await call('/reports/'+route.reportId,'GET',null,token);
+      const assigned=user.role==='reporter'||user.role==='reviewer'&&detail.report.reviewer===user.id||user.role==='consultant'&&detail.report.consultant===user.id;
+      const conversation=assigned?await call('/reports/'+route.reportId+'/messages','GET',null,token):{messages:[]};
+      if(!isCurrent()||running.current||version!==operationVersion.current)return;
+      D(detail.report);M(conversation.messages);
+    }else{
+      if(user.role==='admin')updates.users=(await call('/admin/users','GET',null,token)).users;
+      else updates.reports=(await call(user.role==='reporter'?'/reports/mine':user.role==='reviewer'?'/reports/all':'/reports/accepted','GET',null,token)).reports;
+      if(user.role==='reviewer'){
+        const [queue,staff]=await Promise.all([call('/reports/unassigned','GET',null,token),call('/staff/consultants','GET',null,token)]);
+        updates.unassigned=queue.reports;updates.consultants=staff.consultants;
+      }
+      if(!isCurrent()||running.current||version!==operationVersion.current)return;
+      if(updates.users)S(updates.users);if(updates.reports)R(updates.reports);
+      if(updates.unassigned)Q(updates.unassigned);if(updates.consultants)K(updates.consultants);
+    }
+    setSyncError('');
+  },{enabled:!!user&&!!token&&!busy&&['dashboard','reports','detail'].includes(route.view),scope:(user?.id||'')+token+location.pathname,onError:()=>setSyncError('Automatic updates are temporarily unavailable. Retrying while this page is open.')});
   async function authenticate(e, register) {
     e.preventDefault();
     await run(async () => {
@@ -114,7 +146,8 @@ export default function App() {
         email: '',
         password: ''
       });
-      navigate('dashboard');
+      navigate(communityRequested.current?'community':'dashboard');
+      communityRequested.current=false;
       await refresh(data.user, data.token);
     });
   }
@@ -170,7 +203,7 @@ export default function App() {
     e.preventDefault();
     await run(async () => {
       setStaffInvitation(null);
-      const result = await call('/admin/staff', 'POST', {name:newStaff.name,email:newStaff.email,role:newStaff.role,password:newStaff.password}, token);
+      const result = await call('/admin/staff', 'POST', {name:newStaff.name,email:newStaff.email,role:newStaff.role,password:newStaff.password,...(newStaff.role==='consultant'?{consultantTitle:newStaff.consultantTitle,specialties:newStaff.specialties,organization:newStaff.organization}:{})}, token);
       setStaffInvitation(result);
       J({
         name: '',
@@ -186,6 +219,7 @@ export default function App() {
     e?.preventDefault();
     const q=(question??prompt).trim();
     if(!q)return;
+    P(q);
     await run(async () => {
       const d = await call('/ai/chat', 'POST', {
         message: q
@@ -201,6 +235,8 @@ export default function App() {
   }
   function logout() {setLogoutPending(true);}
   function finishLogout(){
+    setSyncError('');
+    communityRequested.current=false;
     setLogoutPending(false);
     setStaffInvitation(null);
     U(null);
@@ -271,6 +307,7 @@ export default function App() {
     createStaff,
     staffInvitation,
     askAI,
+    clearChat:()=>{A([]);P('');E('');N('');},
     logout,
     N
   };
@@ -285,19 +322,21 @@ export default function App() {
  <Navbar {...pageProps} />
  <ConfirmLogout open={logoutPending} onCancel={()=>setLogoutPending(false)} onConfirm={finishLogout}/>
  <main id="main-content" aria-busy={busy}>
- {user && <div className="workspace-top"><span>YOUR VOICE. YOUR SPACE.</span><div className="account-chip"><span className="avatar">{user.name.charAt(0)}</span><div><strong>{user.name}</strong><small>{user.role}</small></div></div></div>}
+ {user && <div className="workspace-top"><span>YOUR VOICE. YOUR SPACE.</span><div className="account-chip"><span className="avatar">{user.name.charAt(0)}</span><div><strong>{user.name}</strong><small>{user.role==='consultant'?(user.consultantTitle||'General consultant'):user.role}</small></div></div></div>}
  {busy && <div className="loading" role="status">Working…</div>}
+ {user&&syncError&&<p className="auto-refresh-notice" role="status">{syncError}</p>}
  <fieldset className="workspace-controls" disabled={busy}>
  {error && <div className="alert error" role="alert">{error}</div>}{notice && <div className="alert success" role="status">{notice}</div>}
  {view === 'home' && <Home {...pageProps} />}
  {view === 'register' && <Register {...pageProps} />}
- {view === 'login' && <Login {...pageProps} />}
+ {view === 'login' && <>{communityRequested.current&&<p className="community-login-note" role="status">Sign in to explore approved Community Posts. After login, you will return to the posts.</p>}<Login {...pageProps} /></>}
  {view === 'invite' && invitation && <AuthForm key="invite" {...pageProps} mode="invite" onAccept={acceptInvitation}/>}
  {view === 'dashboard' && Dashboard && <Dashboard {...pageProps} />}
  {view === 'reports' && user && user.role !== 'admin' && <MyReports {...pageProps} />}
  {view === 'new-report' && user?.role === 'reporter' && <SubmitReport {...pageProps} />}
  {view === 'detail' && user && selected?.id===route.reportId && <ReportDetails {...pageProps} />}
  {view === 'ai' && user?.role === 'reporter' && <AIConsultant {...pageProps} />}
+ {view === 'community' && user && <Community key={user.id} user={user} token={token} />}
  {view === 'not-found' && <section className="page"><h1>Page not found</h1><p>This address does not match a HER VOICE page.</p><button onClick={()=>navigate(user?'dashboard':'home')}>Go back home</button></section>}
  {view === 'invite' && !invitation && <section className="page"><p>Open the complete invitation link provided by your administrator.</p></section>}
  </fieldset>

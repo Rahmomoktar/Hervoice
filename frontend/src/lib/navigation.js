@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 
-export const paths={home:'/',login:'/login',register:'/register',dashboard:'/dashboard',reports:'/reports','new-report':'/reports/new',ai:'/ai-consultant',invite:'/accept-invitation'};
+export const paths={community:'/community',home:'/',login:'/login',register:'/register',dashboard:'/dashboard',reports:'/reports','new-report':'/reports/new',ai:'/ai-consultant',invite:'/accept-invitation'};
 export function resolveRoute(pathname){
  const path=pathname.replace(/\/+$/,'')||'/';
  const match=Object.entries(paths).find(([,url])=>url===path);

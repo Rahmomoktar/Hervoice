@@ -1,9 +1,8 @@
 import React from 'react';
-import { FileText, Clock, Settings, CheckCircle2, ShieldCheck } from 'lucide-react';
-export default function DashboardSummary({
-  user,
-  reports
-}) {
-  const cards = [[FileText, 'Submitted', 'Reports you have submitted', 'lavender'], [Clock, 'Under Review', 'Being reviewed by staff', 'pink'], [Settings, 'In Progress', 'Action is being taken', 'blue'], [CheckCircle2, 'Closed', 'Resolved and completed', 'teal']];
-  return <><div className="page-heading"><div><span className="eyebrow">{user.role} workspace</span><h1>Welcome back, {user.name}</h1><p>Your reports and messages are visible only to authorized case participants.</p></div>{user.profileCode && <div className="code-card"><ShieldCheck size={28} /><div><small>Private profile code</small><strong>{user.profileCode}</strong><small>An identifier, not a password</small></div></div>}</div><div className="stats-grid">{cards.map(([Icon, status, caption, color]) => <article className={'stat-card ' + color} key={status}><span className="stat-icon"><Icon size={25} /></span><div><strong>{reports.filter(r => r.status === status || status === 'Under Review' && r.status === 'Awaiting Clarification').length}</strong><h3>{status}</h3><p>{caption}</p></div></article>)}</div></>;
+import {FileText,Clock,Activity,CheckCircle2,ArrowUpRight} from 'lucide-react';
+import WorkspaceIntro from './WorkspaceIntro.jsx';
+export default function DashboardSummary(props){
+ const {user,reports,navigate,busy}=props;
+ const cards=[[FileText,user.role==='reviewer'?'All reported cases':user.role==='consultant'?'Assigned cases':'Your reports',reports.length,'In your current case list','lavender'],[Clock,'Awaiting clarification',reports.filter(r=>r.status==='Awaiting Clarification').length,'A follow-up may be needed','pink'],[Activity,'Active cases',reports.filter(r=>['Under Review','In Progress'].includes(r.status)).length,'Under review or in progress','blue'],[CheckCircle2,'Closed cases',reports.filter(r=>r.status==='Closed').length,'Marked closed by case staff','teal']];
+ return <><WorkspaceIntro {...props}/><div className="stats-grid overview-metrics">{cards.map(([Icon,label,value,caption,tone])=><article className={'stat-card '+tone} key={label}><div className="metric-top"><span className="stat-icon"><Icon size={21}/></span><span className="metric-label">{label}</span></div><strong>{value}</strong><p>{caption}</p></article>)}</div><div className="workspace-section-label"><span>CASE OVERVIEW</span><button disabled={busy} className="text-button" onClick={()=>navigate('reports')}>Open case workspace <ArrowUpRight size={15}/></button></div></>;
 }

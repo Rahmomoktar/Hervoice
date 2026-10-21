@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { User, Report, Message } from '../models.js';
 import { auth } from '../middleware/authMiddleware.js';
 import { wrap, validId, loginToken, publicUser, reportJson, allowedReport, categories } from '../utils/helpers.js';
+import {consultantProfile} from '../utils/specialists.js';
 const router = Router();
 router.post('/api/reports', auth('reporter'), wrap(async (req, res) => {
   const {
@@ -34,7 +35,7 @@ router.get('/api/reports/mine', auth('reporter'), wrap(async (req, res) => res.j
   })
 })));
 router.get('/api/reports/all',auth('reviewer'),wrap(async(req,res)=>res.json({reports:(await Report.find().sort({createdAt:-1})).map(r=>{r.$locals.hideNotes=String(r.reviewer)!==req.user.id;return reportJson(r)})})));
-router.get('/api/reports/accepted',auth('consultant'),wrap(async(req,res)=>res.json({reports:(await Report.find({accepted:true}).sort({acceptedAt:-1,createdAt:-1})).map(r=>{r.$locals.hideNotes=String(r.consultant)!==req.user.id;return reportJson(r)})})));
+router.get('/api/reports/accepted',auth('consultant'),wrap(async(req,res)=>res.json({reports:(await Report.find({accepted:true,consultant:req.user._id}).sort({acceptedAt:-1,createdAt:-1})).map(reportJson)})));
 router.get('/api/reports/assigned', auth('reviewer', 'consultant'), wrap(async (req, res) => {
   const key = req.user.role === 'reviewer' ? 'reviewer' : 'consultant';
   res.json({
@@ -91,6 +92,7 @@ router.get('/api/reports/:id', auth('reporter', 'reviewer', 'consultant'), wrap(
   const r = await allowedReport(req, res, true);
   if (!r) return;
   const data = reportJson(r);
+  if(r.consultant){const consultant=await User.findById(r.consultant).select('name consultantTitle organization specialties');if(consultant)data.consultantProfile=consultantProfile(consultant);}
   if (req.user.role === 'reporter'||req.user.role==='reviewer'&&String(r.reviewer)!==req.user.id||req.user.role==='consultant'&&String(r.consultant)!==req.user.id) delete data.notes;
   res.json({
     report: data
@@ -105,11 +107,10 @@ router.patch('/api/reports/:id', auth('reviewer', 'consultant'), wrap(async (req
   });
   if (['reviewer', 'consultant'].includes(req.user.role) && keys[0] === 'status' && ['Under Review', 'Awaiting Clarification', 'In Progress', 'Closed'].includes(req.body.status)) {
     r.status = req.body.status;
-  } else if (r.accepted && req.user.role === 'reviewer' && keys[0] === 'consultant' && validId(req.body.consultant) && (await User.exists({
-    _id: req.body.consultant,
-    role: 'consultant', active: {$ne:false}
-  }))) {
-    r.consultant = req.body.consultant;
+  } else if (r.accepted && req.user.role === 'reviewer' && keys[0] === 'consultant' && validId(req.body.consultant)) {
+    const consultant=await User.findOne({_id:req.body.consultant,role:'consultant',active:{$ne:false}});
+    if(!consultant||!consultantProfile(consultant).specialties.includes(r.category))return res.status(400).json({error:'Choose an active consultant whose supported categories include this report category'});
+    r.consultant = consultant._id;
   } else if (req.user.role === 'consultant' && keys[0] === 'note' && typeof req.body.note === 'string' && req.body.note.trim().length >= 3 && req.body.note.length <= 1000) {
     r.notes.push({
       author: req.user._id,

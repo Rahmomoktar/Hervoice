@@ -1,13 +1,9 @@
 import React from 'react';
-import { MessageSquare, Bot, ArrowRight } from 'lucide-react';
+import {MessageSquare,Compass,ArrowUpRight,Users} from 'lucide-react';
 import DashboardSummary from '../components/DashboardSummary.jsx';
 import ReportsTable from '../components/ReportsTable.jsx';
-export default function ReporterDashboard(props) {
-  const {
-    navigate,
-    reports,
-    openReport,
-    busy
-  } = props;
-  return <section className="page dashboard"><DashboardSummary {...props} /><ReportsTable {...props} reports={reports.slice(0, 5)} /><div className="two-cols dashboard-extras"><article className="panel"><h2><MessageSquare size={24} />Private Messages</h2><p>Continue a conversation with your assigned case team.</p>{reports.length ? <button className="purple" disabled={busy} onClick={() => openReport(reports[0].id)}>Open latest report <ArrowRight size={17} /></button> : <p className="fineprint">Messages will be available from your report once a reviewer is assigned.</p>}</article><article className="panel assistant-preview"><h2><Bot size={24} />AI Consultant</h2><div className="bubble">How can I explain the reporting process?</div><p>Explore predefined answers in our classroom assistant.</p><button onClick={() => navigate('ai')}>Open chat <ArrowRight size={17} /></button></article></div></section>;
+export default function ReporterDashboard(props){
+ const {navigate,reports,openReport,busy}=props;
+ const next=reports.find(r=>r.status==='Awaiting Clarification'),conversation=reports.find(r=>r.reviewer&&r.status!=='Closed');
+ return <section className="page dashboard"><DashboardSummary {...props}/>{next&&<div className="next-step-strip"><span><strong>A case may need your input</strong><small>Open {next.code} to check your team's conversation.</small></span><button disabled={busy} onClick={()=>openReport(next.id)}>Review case <ArrowUpRight size={16}/></button></div>}<div className="dashboard-layout"><div><ReportsTable {...props} reports={reports.slice(0,5)}/><section className="community-dashboard-banner"><span className="banner-icon"><Users size={27}/></span><div><span className="eyebrow">LEARN TOGETHER</span><h2>Shared experiences. Thoughtful advice.</h2><p>Explore approved community posts and offer advice with an invented alias or anonymously.</p></div><button disabled={busy} onClick={()=>navigate('community')}>Explore posts <ArrowUpRight size={17}/></button></section></div><aside className="dashboard-side"><article className="panel action-panel"><span className="action-icon"><MessageSquare size={23}/></span><h2>Your case conversation</h2><p>Read and reply to the team assigned to your case.</p>{conversation?<button className="purple" disabled={busy} onClick={()=>openReport(conversation.id)}>Open conversation</button>:<p className="side-empty">A conversation becomes available after a reviewer is assigned.</p>}</article><article className="panel action-panel"><span className="action-icon teal-icon"><Compass size={23}/></span><h2>A little guidance</h2><p>Get help with reporting, case status and finding your support team.</p><button disabled={busy} onClick={()=>navigate('ai')}>Open offline assistant <ArrowUpRight size={16}/></button><small>Predefined guidance, not professional counseling.</small></article></aside></div></section>;
 }

@@ -1,20 +1,10 @@
 import React from 'react';
-import { ClipboardCheck } from 'lucide-react';
-import { call } from '../lib/api.js';
+import {ClipboardCheck,ArrowUpRight,ShieldCheck} from 'lucide-react';
+import {call} from '../lib/api.js';
 import DashboardSummary from '../components/DashboardSummary.jsx';
 import ReportsTable from '../components/ReportsTable.jsx';
-export default function ReviewerDashboard(props) {
-  const {
-    unassigned,
-    busy,
-    run,
-    token,
-    refresh,
-    N
-  } = props;
-  return <section className="page dashboard"><DashboardSummary {...props} /><ReportsTable {...props} title="All Reported Cases" /><section className="panel"><h2><ClipboardCheck size={24} />Unassigned Reports</h2><p className="fineprint">Open any case to review its details. Claim a case to manage its private conversation, then accept it before assigning a consultant.</p>{unassigned.length ? unassigned.map(r => <div className="report-line" key={r.id}><span><strong>{r.code}</strong> · {r.category}</span><button disabled={busy} onClick={() => run(async () => {
-          await call('/reports/' + r.id + '/claim', 'POST', {}, token);
-          await refresh();
-          N('Case assigned to you');
-        })}>Claim case</button></div>) : <p>No reports are waiting to be assigned.</p>}</section></section>;
+export default function ReviewerDashboard(props){
+ const {unassigned,reports,user,busy,run,token,refresh,N,openReport,navigate}=props;
+ const mine=reports.filter(r=>r.reviewer===user.id&&r.status!=='Closed'),clarify=mine.filter(r=>r.status==='Awaiting Clarification');
+ return <section className="page dashboard"><DashboardSummary {...props}/><div className="dashboard-layout"><div><section className="panel queue-panel"><div className="reviewer-queue-heading"><h2><ClipboardCheck size={22}/>Ready for review</h2><span className="status">{unassigned.length} unassigned</span></div><p className="section-subtitle">Claim a case to manage its conversation. Accept it before assigning a consultant.</p>{unassigned.length?unassigned.slice(0,6).map(r=><div className="report-line" key={r.id}><span><strong>{r.category}</strong><small>{r.code} · {new Date(r.createdAt).toLocaleDateString()}</small></span><button disabled={busy} onClick={()=>run(async()=>{await call('/reports/'+r.id+'/claim','POST',{},token);await refresh();N('Case assigned to you');})}>Claim case <ArrowUpRight size={15}/></button></div>):<p className="side-empty">The queue is clear. No reports are waiting for assignment.</p>}{unassigned.length>6&&<button disabled={busy} onClick={()=>navigate('reports')}>Open all cases</button>}</section><ReportsTable {...props} title="All Reported Cases"/></div><aside className="dashboard-side"><section className="panel action-panel"><span className="action-icon"><ClipboardCheck size={22}/></span><h2>Your active caseload</h2><p><strong>{mine.length}</strong> active assigned cases · <strong>{clarify.length}</strong> awaiting clarification</p>{mine.length?mine.slice(0,3).map(r=><button disabled={busy} key={r.id} onClick={()=>openReport(r.id)}>{r.code}<ArrowUpRight size={14}/></button>):<p className="side-empty">Claim a report to begin your case work.</p>}</section><section className="panel action-panel"><span className="action-icon teal-icon"><ShieldCheck size={22}/></span><h2>Share with care</h2><p>Prepare a generalized summary in case details. Obtain reporter consent and complete both privacy checks before publishing.</p><button disabled={busy} onClick={()=>navigate('community')}>Community Posts &amp; moderation</button></section></aside></div></section>;
 }

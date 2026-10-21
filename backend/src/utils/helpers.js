@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import { Report } from '../models/Report.js';
+import {consultantProfile} from './specialists.js';
 export const wrap = f => (req, res, next) => Promise.resolve(f(req, res, next)).catch(next);
 export const validId = id => mongoose.isValidObjectId(id);
 export const loginToken = u => jwt.sign({
@@ -13,6 +14,8 @@ export const publicUser = u => ({
   id: u.id,
   name: u.name,
   role: u.role,
+  ...(u.role==='consultant'?consultantProfile(u):{}),
+  communityModerator: u.communityModerator===true,
   profileCode: u.profileCode || null
 });
 export const reportJson = r => ({
@@ -45,7 +48,7 @@ export async function allowedReport(req, res, reviewRead = false) {
     return null;
   }
   const u = req.user;
-  if (u.role === 'reporter' && String(r.owner) !== u.id || u.role === 'reviewer' && !reviewRead && String(r.reviewer) !== u.id || u.role === 'consultant' && (!r.accepted || !reviewRead && String(r.consultant) !== u.id) || u.role === 'admin') {
+  if (u.role === 'reporter' && String(r.owner) !== u.id || u.role === 'reviewer' && !reviewRead && String(r.reviewer) !== u.id || u.role === 'consultant' && (!r.accepted || String(r.consultant) !== u.id) || u.role === 'admin') {
     res.status(403).json({
       error: 'Not authorized for this report'
     });

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import {consultantTitles,specialistCategories} from '../utils/specialists.js';
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -23,6 +24,10 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   removedAt: {type: Date, default: null},
+  consultantTitle:{type:String,enum:consultantTitles,default:'General consultant'},
+  specialties:{type:[String],enum:specialistCategories,default:()=>[...specialistCategories]},
+  organization:{type:String,maxlength:100,default:''},
+  communityModerator: {type: Boolean, default: false},
   active: {type: Boolean, default: true},
   invitationHash: {type: String, select: false},
   invitationExpires: {type: Date, select: false},

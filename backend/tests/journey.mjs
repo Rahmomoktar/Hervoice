@@ -1,3 +1,5 @@
+import {specialistTests} from './specialists.mjs';
+import {communityTests} from './community.mjs';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
@@ -55,8 +57,8 @@ try{
  await api('/reports/'+report.id+'/accept','POST',{},rt,403);
  await api('/reports/'+report.id+'/accept','POST',{},vt);
  await api('/reports/'+report.id+'/accept','POST',{},vt,409);
- const acceptedQueue=await api('/reports/accepted','GET',undefined,ct);assert.equal(acceptedQueue.reports[0].description,report.description);
- await api('/reports/'+report.id,'GET',undefined,ct);
+ const acceptedQueue=await api('/reports/accepted','GET',undefined,ct);assert.equal(acceptedQueue.reports.length,0);
+ await api('/reports/'+report.id,'GET',undefined,ct,403);
  await api('/reports/'+report.id+'/messages','GET',undefined,ct,403);
  await api('/reports/'+report.id,'PATCH',{status:'Closed'},ct,403);
  await api('/reports/accepted','GET',undefined,rt,403);
@@ -107,6 +109,8 @@ try{
  await api('/reports/'+report.id+'/messages','GET',undefined,otherToken,403);
  await api('/reports/'+report.id,'PATCH',{status:'Closed'},otherToken,403);
  await api('/reports/'+report.id+'/accept','POST',{},otherToken,409);
+ await specialistTests({api,at,vt,ct,rt,report,password,consultantId:consultant.id,adminId:admin.id});
+ await communityTests({api,rt,vt,ct,at,outsider,otherToken,report,reviewerId:(await User.findOne({email:'reviewer@example.test'})).id});
  await api('/admin/users/'+registered.user.id,'DELETE',undefined,rt,403);
  await api('/admin/users/'+admin.id,'DELETE',undefined,at,400);
  await api('/admin/users/'+registered.user.id,'DELETE',undefined,at);

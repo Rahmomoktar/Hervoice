@@ -3,6 +3,7 @@ import reportRoutes from './routes/reportRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import communityRoutes from './routes/communityRoutes.js';
 import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
@@ -62,6 +63,7 @@ app.use(reportRoutes);
 app.use(messageRoutes);
 app.use(staffRoutes);
 app.use(aiRoutes);
+app.use(communityRoutes);
 app.use((req, res) => res.status(404).json({
   error: 'Endpoint not found'
 }));

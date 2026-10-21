@@ -1,5 +1,63 @@
 # HER VOICE 
 
+## Automatic workspace updates
+
+The sidebar's Refresh workspace button has been removed. Visible dashboards, case lists, open-case status/messages, community feeds and sharing-consent panels update in the background every 15 seconds and when the window regains focus or visibility. Expanded community comments update every 30 seconds. Hidden tabs do not make polling requests. Updates are periodic API reads, not page reloads or server-pushed notifications.
+
+Background requests do not overlap or apply data after page/session changes. They pause during foreground actions, preserve unsent messages, notes, searches and dirty sharing-summary forms, and do not display the blocking Working indicator. A changed sharing draft resets consent/privacy checkboxes. Existing API authorization remains enforced for every request.
+
+Verification: production build and whitespace checks passed. A separate fictional-data browser check confirmed the sidebar button was absent and an open reporter case picked up both a new reviewer message and a status change automatically while preserving the typed, unsent message. No reload or navigation occurred during that check. Temporary preview servers were stopped and the fictional test database was retained.
+
+## Consultant titles and problem-based assignment
+
+The authorization roles remain reporter, reviewer, consultant and admin. Consultants now have a separate support title: General consultant, Support worker, Counselor, Organization representative, Police liaison, Legal advisor, Health specialist, Shelter coordinator or Other specialist. Administrators can also record an organization/team and the report categories each consultant supports. These are descriptive internal profiles, not verification of professional credentials or external agency integration.
+
+In **Admin → Add Staff**, choose Human consultant to configure the title and supported categories. Existing consultants have **Edit consultant specialty** in the account list. Older accounts and clients without specialty settings retain the general-consultant/all-category defaults. Profile edits preserve existing assignments; future assignments must match the current supported categories.
+
+In an accepted case, the assigned reviewer selects an active consultant supporting that case category. The selector displays name, title and organization; the backend independently rejects mismatched assignments. Assigned consultant details appear in case details and consultant titles appear on their dashboard/account chip. All consultants, including police/organization titles, can access only accepted cases assigned to them. No outside organization or police service is automatically contacted, and no new accounts or existing staff specialties are changed by installation.
+
+Verification: **238 API assertions passed**, including titles, category validation, admin-only profile changes, invitation persistence, mismatch rejection, retained existing assignments, assigned-only private access and reporter-visible specialist details. Production build passed. Browser checks used a separate fictional database and covered admin title/category controls and a reviewer assigning the matching counselor. The preview screenshot contains fictional data; temporary preview servers are stopped after verification and test databases are retained.
+
+## Assistant layout and sidebar fit
+
+AI Consultant now uses a dedicated chat layout with topic cards, quick questions, a case-team shortcut, a message composer with a 500-character counter, Enter-to-send / Shift+Enter newline, and clear-conversation control. Replies remain predefined and status results remain restricted to the current reporter's cases. Questions, including suggested questions, remain in the composer if a request fails. The interface clearly identifies the offline assistant and its limits.
+
+Desktop sidebar spacing now fits the navigation into the viewport without a separate internal scroller. Decorative text is omitted on shorter screens. Very short desktop windows use document scrolling so navigation is not clipped; mobile navigation retains its existing horizontal layout.
+
+Verification: frontend production build passed. Browser checks in a separate fictional database covered status suggestions, authorized report-action navigation, conversation retention between pages, keyboard submission, privacy replies and clear conversation. A desktop screenshot confirms all reporter navigation buttons including Logout fit without a sidebar scrollbar. The screenshot uses fictional data; temporary preview servers are stopped and the test database is retained. Broad device/accessibility checks were not repeated.
+
+## Dashboard refresh and Community Posts navigation
+
+Community Posts now has a dedicated feed layout with a welcome banner, category chips, keyword search, expandable lessons and recommendations, a privacy sidebar, and separate My advice / moderation / team-permission sections. Approved comments and the optional anonymous advice composer expand within each post. Pending advice is visible in the reporter's contribution history and remains absent from approved comments.
+
+Latest community UI verification: production build passed. Browser checks covered category filtering, approved-comment expansion, anonymous advice submission into pending moderation, pending/approved contribution history, and expandable guidance/privacy disclosures. Populated-feed checks used only a separate `her_voice_ui_<timestamp>` MongoDB database and temporary preview servers; no existing case was published or modified. The preview screenshot contains fictional data. Test data is retained; the preview servers are stopped after verification. Broad device and accessibility testing remains outstanding.
+
+All four dashboards now use a shared welcome panel and clear actions for their roles. Reporter, reviewer and consultant overviews show actual accessible-case totals, clarification counts, active cases and closed cases. Reviewer queues and assigned caseload shortcuts, reporter conversation/guidance cards and consultant support cards link to existing actions. Administrators have account search, role filters, staff setup and a moderation shortcut.
+
+Case tables and the full reports workspace support keyword search, status filters and newest/oldest sorting. Search applies to the displayed list; the reporter dashboard shows the five most recent reports and the full list is available through View all. Counts reflect the records returned by existing APIs and their existing list limits.
+
+Home navigation now includes **Community Posts**, plus a community callout. Signed-out visitors are asked to sign in and return to the posts after authentication. The community feed uses post cards with category, sanitized content and comment forms. Only already-approved, consented summaries are displayed; pending comments retain moderation. No private case is automatically published by the redesign.
+
+Verification for this UI refresh: production build passed; browser checks covered Home → Community Posts → sign-in → posts, administrator dashboard rendering, and account search/empty state. Existing backend permissions and moderation APIs were preserved. A full browser journey for every role and a broad device/accessibility audit were not repeated.
+
+## Verified Reports & Community Advice (current workflow)
+
+Open **Community Advice** in the signed-in sidebar (`/community`). The library contains only separate sanitized summaries explicitly approved for sharing. Case acceptance, review or closure never publishes a case. “Verified” indicates a sharing review, not proof of an allegation.
+
+1. The assigned reviewer accepts a fictional case and writes four separate fields under **Optional community sharing** in report details: sanitized summary, generalized situation, lessons and recommendations. Remove names, contact information, locations, dates, institutions and indirect identifying combinations. Private report text is never automatically copied.
+2. The report owner reads that exact version in their report details and optionally grants consent. Consent is separate from report submission and case support.
+3. The assigned reviewer performs separate privacy and indirect-identifier checks and explicitly publishes. Missing consent or privacy approval keeps the summary private. Any edit unpublishes and invalidates prior consent and privacy approval. The owner may withdraw consent to unpublish. Previously saved or read copies cannot be recalled.
+4. Authenticated reporters submit constructive advice using an invented alias or Anonymous. All comments await moderation. Contact details, links, common abusive phrases and identifier patterns are rejected; these checks supplement mandatory human review and cannot reliably detect all indirect identification or abuse.
+5. Administrators moderate without access to private case content and can grant or revoke community moderation permission for reviewers on the community page. Moderators review privacy and conduct before approving advice, or remove it. Reporting a published comment hides it immediately for a new review. Comments are bound to a summary version, so comments on an earlier version do not appear on a revised summary.
+
+Private report links, ownership, consent and reviewer records are stored separately from the allowlisted community API representation. Public comment responses contain only independent comment ID, alias and text. Account linkage is retained privately for moderation; complete anonymity is not promised. Search operates on sanitized fields only. All community endpoints require authentication. General community access does not grant private case access.
+
+**This workflow supersedes the earlier consultant shared accepted-case queue:** consultants can read and modify only accepted cases assigned to them. They may read approved community guidance. Reviewers retain all-report review access and assignment-based private conversations. Administrators manage accounts and comment permissions without private report access.
+
+Validation: `npm test` in backend includes the existing journey plus community privacy/consent/moderation tests using a separate fictional MongoDB database. `npm run build` in frontend validates the production bundle. Test databases are retained. Use fictional information only; human review, operational safeguarding and deployment security remain necessary for real-world use.
+
+Latest verification: **198 API assertions passed**, plus database, privacy, CORS, rate-limit and restart checks; frontend production build passed. Browser checks covered administrator sign-in, community navigation, privacy notice, filters and the empty library/moderation states at a narrow viewport. The complete publication/consent/comment lifecycle was tested through HTTP, not a full multi-role browser suite. The local backend was restarted with the new routes. No existing case was published and no existing user's moderation permissions were changed for the browser checks.
+
 React + Vite frontend, Express + MongoDB backend. Includes reporter registration and login, private profile codes, reporter-owned reports, reviewer claim/verification flow, private report-based messaging, consultant assignment and internal notes, admin staff creation, and an **offline predefined-response assistant** (not a real AI integration).
 
 **SAFETY:** Use fictional data only. This code is **NOT** production ready for confidential or urgent reporting. Before deploying for real users, obtain safeguarding and security reviews, plan moderation and escalation, consent, privacy disclosures, secure session handling, audit logs, encryption, retention and deletion, and abuse prevention. Reviewer clarification cannot determine truth with certainty. No emergency guarantees. Do not store real personal data in this prototype.
