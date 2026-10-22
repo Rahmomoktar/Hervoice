@@ -8,6 +8,7 @@ import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 import {Report} from './models/Report.js';
+import {CommunityPublication} from './models/Community.js';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -89,6 +90,11 @@ try {
   await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/her_voice_demo', {
     serverSelectionTimeoutMS: 5000
   });
+  // Preserve every document while replacing the legacy sparse-incompatible index.
+  const publicationIndexes=await CommunityPublication.collection.indexes();
+  const legacyReportIndex=publicationIndexes.find(index=>index.name==='report_1'&&!index.partialFilterExpression);
+  if(legacyReportIndex)await CommunityPublication.collection.dropIndex(legacyReportIndex.name);
+  await CommunityPublication.collection.createIndex({report:1},{name:'report_unique_when_present',unique:true,partialFilterExpression:{report:{$type:'objectId'}}});
   await Report.updateMany({consultant:{$ne:null},accepted:{$exists:false}},{$set:{accepted:true}});
   app.listen(PORT, process.env.HOST || '127.0.0.1', () => console.log(`HER VOICE API listening at http://localhost:${PORT}`));
 } catch (e) {

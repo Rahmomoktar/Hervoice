@@ -7,6 +7,7 @@ const categories = ['Bullying', 'Harassment', 'Discrimination', 'Unfair Treatmen
 export default function ReportDetails(props) {
   const {
     view,
+    detailSection,
     user,
     token,
     error,
@@ -45,10 +46,10 @@ export default function ReportDetails(props) {
     logout,
     N
   } = props;
-  return <section className="page"><button disabled={busy} onClick={() => run(async () => {
+  return <section className="page report-workspace"><button disabled={busy} onClick={() => run(async () => {
       await refresh();
       navigate('dashboard');
-    })}>← Back to dashboard</button><h1>Report {selected.code}</h1>{selected.consultantProfile&&<div className="case-specialist"><ShieldCheck size={23}/><div><strong>Your assigned case specialist</strong><p>{selected.consultantProfile.name} · {selected.consultantProfile.consultantTitle}{selected.consultantProfile.organization?" · "+selected.consultantProfile.organization:""}</p></div></div>}{user?.role==='reviewer'&&!selected.reviewer&&<button className="purple" disabled={busy} onClick={acceptCase}>Accept case and assign to me</button>}<div className="two-cols"><div className="panel"><span className="status">{selected.status}</span><h2>{selected.category}</h2><p className="report-text">{selected.description}</p>{(user?.role==='consultant'&&selected.consultant===user.id||user?.role==='reviewer'&&selected.reviewer===user.id) && <><h3>Review actions</h3><div className="button-row"><select aria-label="Change status" value={selected.status} onChange={e => updateReport({
+    })}>← Back to dashboard</button><div className="report-workspace-heading"><div><h1>Report {selected.code}</h1><p>{detailSection==='messages'?'Private conversation with the assigned case team.':'Case information and authorized review actions.'}</p></div><nav className="report-workspace-tabs" aria-label="Report sections"><button className={detailSection==='details'?'active':''} aria-current={detailSection==='details'?'page':undefined} onClick={()=>navigate('detail',{reportId:selected.id})}>View Details</button><button className={detailSection==='messages'?'active':''} aria-current={detailSection==='messages'?'page':undefined} onClick={()=>navigate('detail',{reportId:selected.id,hash:'private-messages'})}><MessageCircle size={17}/>View Messages</button></nav></div>{detailSection==='details'&&<>{selected.consultantProfile&&<div className="case-specialist"><ShieldCheck size={23}/><div><strong>Your assigned case specialist</strong><p>{selected.consultantProfile.name} · {selected.consultantProfile.consultantTitle}{selected.consultantProfile.organization?" · "+selected.consultantProfile.organization:""}</p></div></div>}{user?.role==='reviewer'&&!selected.reviewer&&<button className="purple" disabled={busy} onClick={acceptCase}>Accept case and assign to me</button>}<div className="panel"><span className="status">{selected.status}</span><h2>{selected.category}</h2><p className="report-text">{selected.description}</p>{(user?.role==='consultant'&&selected.consultant===user.id||user?.role==='reviewer'&&selected.reviewer===user.id) && <><h3>Review actions</h3><div className="button-row"><select aria-label="Change status" value={selected.status} onChange={e => updateReport({
               status: e.target.value
             })}>{['Under Review', 'Awaiting Clarification', 'In Progress', 'Closed'].map(s => <option key={s}>{s}</option>)}</select></div>{user?.role === 'reviewer' && <>{!selected.accepted?<button className="purple" disabled={busy} onClick={acceptCase}>Accept case for consultant support</button>:<p className="accepted-label">✓ Accepted for consultant support</p>}<label>Assign a suitable case specialist<select disabled={!selected.accepted||busy} value={selected.consultant || ''} onChange={e => e.target.value && updateReport({
               consultant: e.target.value
@@ -57,5 +58,5 @@ export default function ReportDetails(props) {
             updateReport({
               note
             });
-          }}><textarea aria-label="Internal case note" value={note} onChange={e => H(e.target.value)} minLength={3} maxLength={1000} required placeholder="Write an internal fictional case note" /><button disabled={busy} className="purple">Add note</button></form></>}</div><PrivateMessages {...props} /></div><CommunitySharing key={selected.id} selected={selected} user={user} token={token}/></section>;
+          }}><textarea aria-label="Internal case note" value={note} onChange={e => H(e.target.value)} minLength={3} maxLength={1000} required placeholder="Write an internal fictional case note" /><button disabled={busy} className="purple">Add note</button></form></>}</div><CommunitySharing key={selected.id} selected={selected} user={user} token={token}/></>}{detailSection==='messages'&&<PrivateMessages {...props}/>}</section>;
 }

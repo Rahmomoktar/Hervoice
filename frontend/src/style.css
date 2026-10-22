@@ -37,4 +37,8 @@ body{background:radial-gradient(ellipse at 80% 0%,#eee6fc 0,transparent 45%),#FA
  .sidebar nav button{font-size:12px;padding:9px 10px}
  .sidebar .logout{padding-top:11px;margin-top:5px}
 }
-@media(min-width:701px) and (max-height:500px){.sidebar{position:static;height:auto;align-self:stretch}}
+@media(min-width:701px) and (max-height:500px){.sidebar{position:sticky;top:0;height:100dvh;align-self:start;overflow-y:auto}}
+
+/* Keep navigation anchored while page content scrolls. */
+.sidebar{align-self:start;z-index:40}.landing-navbar{position:sticky;top:0;z-index:40}
+@media(max-width:700px){.sidebar{position:sticky;top:0;z-index:40;height:auto;max-height:100dvh;overflow-y:auto}}

@@ -64,6 +64,14 @@ try{
  await api('/reports/accepted','GET',undefined,rt,403);
  await api('/reports/'+report.id,'PATCH',{consultant:consultant.id},vt);
  assert.equal((await api('/reports/assigned','GET',undefined,ct)).reports.length,1);
+ await api('/reports/'+report.id+'/messages','POST',{text:'Fictional consultant guidance'},ct,201);
+ const reporterConversation=await api('/reports/'+report.id+'/messages','GET',undefined,rt);
+ assert.equal(reporterConversation.messages.at(-1).text,'Fictional consultant guidance');
+ assert.equal(reporterConversation.messages.at(-1).senderRole,'consultant');
+ await api('/reports/'+report.id+'/messages','POST',{text:'Fictional reporter response to consultant'},rt,201);
+ const consultantConversation=await api('/reports/'+report.id+'/messages','GET',undefined,ct);
+ assert.equal(consultantConversation.messages.at(-1).text,'Fictional reporter response to consultant');
+ assert.equal(consultantConversation.messages.at(-1).senderRole,'reporter');
  await api('/reports/'+report.id,'PATCH',{note:'Fictional internal note'},ct);
  await api('/reports/'+report.id,'PATCH',{status:'In Progress'},ct);
  for(const path of ['/reports/mine','/reports/'+report.id]){const data=await api(path,'GET',undefined,rt);assert.ok(!JSON.stringify(data).includes('Fictional internal note'));assert.ok(!JSON.stringify(data).includes('"notes"'))}
@@ -74,7 +82,7 @@ try{
  const malformed=await fetch('http://127.0.0.1:5099/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:'{'});assert.equal(malformed.status,400);
  await api('/missing','GET',undefined,rt,404);await api('/auth/me','GET',undefined,'invalid-token',401);
  const cors=await fetch('http://127.0.0.1:5099/api/health',{headers:{Origin:'http://localhost:5173'}});assert.equal(cors.headers.get('access-control-allow-origin'),'http://localhost:5173');
- await stop();await start();assert.equal((await api('/reports/'+report.id,'GET',undefined,rt)).report.status,'In Progress');assert.equal((await api('/reports/'+report.id+'/messages','GET',undefined,rt)).messages.length,2);
+ await stop();await start();assert.equal((await api('/reports/'+report.id,'GET',undefined,rt)).report.status,'In Progress');assert.equal((await api('/reports/'+report.id+'/messages','GET',undefined,rt)).messages.length,4);
  console.log('PASS backend restart persistence');
  await api('/auth/register','POST',{name:'Fictional Nine',email:'nine@example.test',password:'Demo12345'},undefined,201);
  for(const role of ['reviewer','consultant']){

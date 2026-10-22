@@ -10,13 +10,14 @@ router.get('/api/reports/:id/messages', auth('reporter', 'reviewer', 'consultant
   if (!r) return;
   const msgs = await Message.find({
     report: r._id
-  }).sort({
+  }).populate('sender','role').sort({
     createdAt: 1
   }).limit(200);
   res.json({
     messages: msgs.map(m => ({
       id: m.id,
-      sender: m.sender,
+      sender: m.sender?._id || m.sender,
+      senderRole: m.sender?.role || 'case participant',
       text: m.text,
       createdAt: m.createdAt
     }))
@@ -31,13 +32,14 @@ router.post('/api/reports/:id/messages', auth('reporter', 'reviewer', 'consultan
   if (typeof text !== 'string' || text.trim().length < 2 || text.length > 1000) return res.status(400).json({
     error: 'Message must be 2–1000 characters'
   });
-  if (req.user.role === 'reporter' && !r.reviewer) return res.status(400).json({
-    error: 'A reviewer has not been assigned yet'
+  if (req.user.role === 'reporter' && !r.reviewer && !r.consultant) return res.status(400).json({
+    error: 'Case staff have not been assigned yet'
   });
   const m = await Message.create({
     report: r._id,
     sender: req.user._id,
-    text: text.trim()
+    text: text.trim(),
+    visibility: 'participants'
   });
   res.status(201).json({
     message: {

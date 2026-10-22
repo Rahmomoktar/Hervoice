@@ -165,17 +165,20 @@ export default function App() {
       N('Your demo report was submitted. Reference: ' + result.report.code);
     });
   }
-  async function loadReport(id) {
+  async function loadReport(id, hash) {
     const d = await call('/reports/' + id, 'GET', null, token);
     const msgs = (user.role==='reviewer'&&d.report.reviewer!==user.id||user.role==='consultant'&&d.report.consultant!==user.id)?{messages:[]}:await call('/reports/' + id + '/messages', 'GET', null, token);
     D(d.report);
     M(msgs.messages);
     G('');
     H('');
-    navigate('detail',{reportId:id});
+    navigate('detail',{reportId:id,hash});
   }
   async function openReport(id) {
     await run(() => loadReport(id));
+  }
+  async function openMessages(id) {
+    await run(() => loadReport(id,'private-messages'));
   }
   async function sendMessage(e) {
     e.preventDefault();
@@ -270,6 +273,7 @@ export default function App() {
   }
   const pageProps = {
     view,
+    detailSection:location.hash==='#private-messages'?'messages':'details',
     user,
     token,
     error,
@@ -300,6 +304,7 @@ export default function App() {
     authenticate,
     submit,
     openReport,
+    openMessages,
     sendMessage,
     updateReport,
     acceptCase,

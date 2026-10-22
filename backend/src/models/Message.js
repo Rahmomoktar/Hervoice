@@ -15,6 +15,12 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true,
     maxlength: 1000
+  },
+  visibility: {
+    type: String,
+    enum: ['participants'],
+    default: 'participants',
+    required: true
   }
 }, {
   timestamps: true

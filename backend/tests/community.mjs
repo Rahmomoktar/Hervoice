@@ -30,7 +30,7 @@ export async function communityTests({api,rt,vt,ct,at,outsider,otherToken,report
  const publicItems=(await api('/community','GET',undefined,outsider.token)).publications;
  assert.equal(publicItems.length,1);
  const item=publicItems[0];assert.notEqual(item.id,report.id);
- assert.deepEqual(Object.keys(item).sort(),['id','category',...Object.keys(draft)].sort());
+ assert.deepEqual(Object.keys(item).sort(),['id','category','kind','alias','ownedByMe',...Object.keys(draft)].sort());
  const serialized=JSON.stringify(item);
  for(const secret of [report.id,report.code,report.description,outsider.user.id,'Fictional internal note','Fictional reviewer clarification','owner','profileCode','email','notes','messages','reviewer','consultant'])assert.ok(!serialized.includes(secret),secret+' leaked');
  assert.equal((await api('/community?q=exclusion&category=Bullying','GET',undefined,rt)).publications.length,1);
@@ -58,7 +58,7 @@ export async function communityTests({api,rt,vt,ct,at,outsider,otherToken,report
  await api('/community-comments/'+own.id+'/moderate','PATCH',{state:'approved',privacyChecked:true,conductChecked:true},rt,403);
  await api('/community-comments/'+own.id+'/moderate','PATCH',{state:'approved',privacyChecked:true,conductChecked:true},vt);
  const published=(await api(comments,'GET',undefined,outsider.token)).comments[0];
- assert.deepEqual(Object.keys(published).sort(),['alias','id','text']);
+ assert.deepEqual(Object.keys(published).sort(),['alias','id','ownedByMe','text']);
  assert.ok(!JSON.stringify(published).includes(String((await Report.findById(report.id)).owner)));
  await api('/community-comments/'+own.id+'/flag','POST',{reason:'May reveal an identifying circumstance'},outsider.token);
  assert.equal((await api(comments,'GET',undefined,rt)).comments.length,0);
@@ -93,5 +93,21 @@ export async function communityTests({api,rt,vt,ct,at,outsider,otherToken,report
  // Status changes alone never republish a consent-invalidated summary.
  await api(path,'PATCH',{status:'Closed'},vt);
  assert.equal((await api('/community','GET',undefined,rt)).publications.length,0);
+ const member=await api('/community','POST',{title:'Finding support together',message:'A fictional general message about asking a trusted person for support.',category:'Bullying'},rt,201);
+ assert.ok(await CommunityPublication.exists({_id:member.post.id,author:(await Report.findById(report.id)).owner,published:false}));
+ assert.equal((await api('/community','GET',undefined,outsider.token)).publications.length,0);
+ await api('/community-posts/'+member.post.id+'/moderate','PATCH',{state:'approved',privacyChecked:true,conductChecked:true},rt,403);
+ await api('/community-posts/'+member.post.id+'/moderate','PATCH',{state:'approved'},at,400);
+ await api('/community-posts/'+member.post.id+'/moderate','PATCH',{state:'approved',privacyChecked:true,conductChecked:true},at);
+ assert.equal((await api('/community','GET',undefined,outsider.token)).publications[0].summary,'Finding support together');
+ await api('/community-posts/'+member.post.id,'PATCH',{title:'Not mine',message:'A fictional safe replacement message for ownership testing.',category:'Other'},outsider.token,404);
+ await api('/community-posts/'+member.post.id,'PATCH',{title:'Updated support ideas',message:'A fictional updated message which requires another moderation decision.',category:'Other',alias:'Hopeful Voice'},rt);
+ assert.equal((await api('/community','GET',undefined,outsider.token)).publications.length,0);
+ await api('/community-posts/'+member.post.id+'/moderate','PATCH',{state:'approved',privacyChecked:true,conductChecked:true},at);
+ await api('/community-posts/'+member.post.id+'/flag','POST',{reason:'Needs another privacy review'},outsider.token);
+ assert.equal((await api('/community','GET',undefined,rt)).publications.length,0);
+ await api('/community-posts/'+member.post.id,'DELETE',undefined,outsider.token,404);
+ await api('/community-posts/'+member.post.id,'DELETE',undefined,rt);
+ assert.equal((await api('/community-posts/mine','GET',undefined,rt)).posts[0].state,'removed');
  console.log('PASS community consent/version gates, privacy allowlists, private-ID isolation, filtering, moderation permissions, alias privacy, flag/remove, withdrawal and edit invalidation');
 }
