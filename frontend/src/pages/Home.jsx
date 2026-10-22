@@ -23,10 +23,7 @@ export default function Home({user,navigate,busy}) {
         <div className="landing-copy">
           <span className="community-badge"><Heart size={17} fill="currentColor"/>A kinder community for every girl</span>
           <h1 id="hero-title">Speak Safely.<br/>Be Heard.<br/><span>Create Change.</span></h1>
-          <p className="hero-description">A space to speak up, understand the reporting process, and connect with your case team. Your voice matters, and you are not alone.</p>
           <div className="landing-actions"><button className="purple" disabled={busy} onClick={start}>Submit a Report <ArrowRight size={18}/></button><button disabled={busy} onClick={()=>jump('about')}>Learn More</button></div>
-          <div className="trust-row"><div><ShieldCheck/><span><strong>Personal space</strong><small>Access through your account</small></span></div><div><Users/><span><strong>Case team</strong><small>Assigned reviewers and consultants</small></span></div><div><Heart/><span><strong>Stronger tomorrow</strong><small>Every voice matters</small></span></div></div>
-          <p className="landing-demo-note">Classroom prototype · Fictional information only · Not an emergency service</p>
         </div>
         <div className="hero-handwriting" aria-hidden="true">A Stronger<br/><span>Tomorrow</span><Heart size={18} fill="currentColor"/></div>
         <aside className="hero-values" aria-label="What you can do"><div><span className="value-icon purple-tone"><Users/></span><p><strong>Be heard</strong><small>A place for your voice</small></p></div><div><span className="value-icon pink-tone"><FileText/></span><p><strong>Speak up</strong><small>Submit a fictional report</small></p></div><div><span className="value-icon violet-tone"><Headphones/></span><p><strong>Stay connected</strong><small>Message your case team</small></p></div><div><span className="value-icon pink-tone"><Heart fill="currentColor"/></span><p><strong>Move forward</strong><small>Follow your report's progress</small></p></div></aside>
