@@ -123,8 +123,8 @@ Public signup always creates a **reporter**. All roles use the same login page. 
 ### 1. Clone the repository
 
 ```powershell
-git clone https://github.com/hafsaZtudIO/Her-Voice.git
-cd Her-Voice
+git clone https://github.com/Rahmomoktar/Hervoice.git
+cd Hervoice
 ```
 
 ### 2. Configure the backend
@@ -256,7 +256,7 @@ Authentication stays in memory. A browser reload or a new tab requires login aga
 ## Project structure
 
 ```text
-Her-Voice/
+Hervoice/
 ├── backend/
 │   ├── src/
 │   │   ├── middleware/       # Authentication and role checks
@@ -338,6 +338,6 @@ The interface uses purple `#6C4AB6`, lavender `#F3EDFF`, navy `#263248`, pink `#
 
 ## Repository
 
-[github.com/hafsaZtudIO/Her-Voice](https://github.com/hafsaZtudIO/Her-Voice)
+[github.com/Rahmomoktar/Hervoice](https://github.com/Rahmomoktar/Hervoice)
 
 No open-source license file is included at the time of this documentation update. Add an appropriate license before describing the project as freely licensed.
